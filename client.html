@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>简易弹幕</title>
+  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <style>
+    .panel-danmu {
+      margin-top: 20px;
+    }
+    .panel-danmu>.panel-body {
+      height: 300px;
+    }
+  </style>
+</head>
+<body>
+<div class="jumbotron">
+  <h1 class="text-center">简易弹幕系统</h1>
+</div>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <div class="panel panel-default panel-danmu">
+        <div class="panel-heading">
+          <h3 class="panel-title">弹幕区域</h3>
+        </div>
+        <div class="panel-body">
+          <div id="danmu">
+
+          </div>
+        </div>
+        <div class="panel-footer">
+          <div class="input-group">
+            <input type="text" class="form-control danmu-text" placeholder="发点什么吧">
+            <span class="input-group-btn">
+              <button class="btn btn-success danmu-send" type="button">发送</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script src="/jquery.danmu.min.js"></script>
+<script>
+  ws = new WebSocket('ws://127.0.0.1:9502');
+  ws.onopen = function(evt) {
+    console.log('Connection open ...');
+    $('#danmu').danmu({
+      height: '300px',  //弹幕区高度
+      width: '100%',   //弹幕区宽度
+      zindex :100,   //弹幕区域z-index属性
+      speed:7000,      //滚动弹幕的默认速度，这是数值值得是弹幕滚过每672像素所需要的时间（毫秒）
+      sumTime:65535,   //弹幕流的总时间
+      danmuLoop:false,   //是否循环播放弹幕
+      defaultFontColor:"#FFFFFF",   //弹幕的默认颜色
+      fontSizeSmall:16,     //小弹幕的字号大小
+      FontSizeBig:24,       //大弹幕的字号大小
+      opacity:"0.9",      //默认弹幕透明度
+      topBottonDanmuTime:6000,   // 顶部底部弹幕持续时间（毫秒）
+      SubtitleProtection:false,     //是否字幕保护
+      positionOptimize:false,         //是否位置优化，位置优化是指像AB站那样弹幕主要漂浮于区域上半部分
+
+      maxCountInScreen: 40,   //屏幕上的最大的显示弹幕数目,弹幕数量过多时,优先加载最新的。
+      maxCountPerSec: 10      //每分秒钟最多的弹幕数目,弹幕数量过多时,优先加载最新的。
+    });
+    $("#danmu").danmu("addDanmu",[
+       { text:"这是滚动弹幕" ,color:"white",size:1,position:0,time:2}
+      ,{ text:"这是顶部弹幕" ,color:"yellow" ,size:1,position:1,time:3}
+      ,{ text:"这是底部弹幕" , color:"red" ,size:1,position:2,time:3}
+    ]);
+    $('.danmu-send').click(function() {
+      ws.send($('.danmu-text').val());
+      send();
+    });
+    $('#danmu').danmu('danmuStart');
+  };
+
+  ws.onmessage = function(evt) {
+    console.log('Received Message: ' + evt.data);
+    var time = $('#danmu').data("nowTime")+1;
+    var new_obj = { text: evt.data, color: "white", size: 1, position: 0, time: time};
+    $('#danmu').danmu("addDanmu", new_obj);//添加弹幕
+  };
+
+  ws.onclose = function(evt) {
+    console.log('Connection closed.');
+  };
+
+  function send(){
+    var text = $('.danmu-text').val();
+    var time = $('#danmu').data("nowTime")+1;
+    var color = 'white';
+    var size = 1;
+    var position = 0;
+    var text_obj='{ "text":"'+text+'","color":"'+color+'","size":"'+size+'","position":"'+position+'","time":'+time+', isnew: ""}';
+    var new_obj=eval('('+text_obj+')');
+    $('#danmu').danmu("addDanmu",new_obj);
+    $('.danmu-text').val('');
+  }
+</script>
+</body>
+</html>
